@@ -24,6 +24,7 @@
 
 require_once("../../config.php");
 require_once($CFG->libdir . "/adminlib.php");
+require_once(__DIR__ . "/lib.php");
 
 $context = context_system::instance();
 $confirm = optional_param("confirm", false, PARAM_BOOL);
@@ -42,7 +43,7 @@ if ($confirm && isloggedin() && confirm_sesskey()) {
 	$errors = array();
 	foreach ($users as $user) {
 		try {
-			set_user_preference("force_checkup", 1, $user);
+			local_checkup_activate_for($user);
 		} catch (moodle_exception $e) {
 			++$failed;
 			$message = html_writer::div(get_string("usernotupdated", "local_checkup", $user))

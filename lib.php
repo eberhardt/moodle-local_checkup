@@ -24,12 +24,97 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-function local_checkup_force_redirect($eventdata) {
-	global $CFG;
-	if (!isguestuser() && local_checkup_redirect($eventdata)) {
-		redirect($CFG->wwwroot . "/local/checkup/index.php");
+/**
+ * Activates forced checkup of a user
+ *
+ * @param stdClass $user
+ */
+function local_checkup_activate_for(stdClass $user) {
+	/*
+	 * Tried workaround to prevent core code changes... didn't worked out. The code should force moodle mechanics by
+	 * artificially letting `over_bounce_threshold()` return `true`. It would have lead to `user_not_fully_set_up()`
+	 * returning `true` and redirect to profile edit page.
+	 *
+	 * But since, there's no possibility to have a message prompted, why there's this redirect (without changing of core
+	 * code again) this would have lead to confusion.
+	 *
+	 * As general remark: `$CFG->handlebounces` must be set in `/config.php`.
+	 *
+	$prefarray = array();
+	$bouncecount = get_user_preferences("email_bounce_count", null, $user);
+	if (!empty($bouncecount)) {
+		$prefarray["email_bounce_count"] = $bouncecount;
 	}
-	return true;
+	$sendcount = get_user_preferences("email_send_count", null, $user);
+	if (!empty($sendcount)) {
+		$prefarray["email_send_count"] = $bouncecount;
+	}
+	if (!empty($prefarray)) {
+		// Save old settings, if exist.
+		set_user_preference("checkup_counts", serialize($prefarray), $user);
+	}
+	// Ensure that over_bounce_threshold() returns TRUE.
+	$prefarray = array("email_bounce_count" => 1000,
+	                   "email_send_count" => 1);
+	set_user_preferences($prefarray, $user);
+	*/
+	return set_user_preference("checkup_forcecheck", "1", $user);
+}
+
+/**
+ * Deactivates forced checkup of a user
+ *
+ * @param stdClass $user
+ * @return boolean
+ */
+function local_checkup_deactivate_for(stdClass $user = null) {
+	/*
+	 * Tried workaround to prevent core code changes... didn't worked out. See notes above.
+	 *
+	$counts = get_user_preferences("checkup_counts", null, $user);
+	if (empty($counts)) {
+		// Just delete artificial values.
+		$prefarray = array("email_bounce_count" => null,
+		                   "email_send_count" => null);
+	} else {
+		// Restore old settings first.
+		$prefarray = unserialize($counts);
+		// Ensure, that all artificial values are deleted
+		if (empty($prefarray["email_bounce_count"])) {
+			$prefarray["email_bounce_count"] = null;
+		}
+		if (empty($prefarray["email_send_count"])) {
+			$prefarray["email_bounce_count"] = null;
+		}
+		// Delete temporal storage.
+		$prefarray["checkup_counts"] = null;
+	}
+	return set_user_preferences($prefarray, $user);
+	*/
+	global $SESSION;
+	$prefarray = array("checkup_forcecheck" => null);
+	$wantsurl = get_user_preferences("checkup_wantsurl", null, $user);
+	if (!empty($wantsurl)) {
+		$SESSION->wantsurl = $wantsurl;
+		$prefarray["checkup_wantsurl"] = null;
+	}
+	return set_user_preferences($prefarray, $user);
+}
+
+/**
+ * Redirects to
+ *
+ * @param unknown $preventredirect
+ * @param unknown $setwantsurltome
+ * @see require_login()
+ */
+function local_checkup_manual_redirect() {
+	global $CFG;
+	if (local_checkup_mustcheck() && !\core\session\manager::is_loggedinas()) {
+		local_checkup_wantsurl_update();
+		$wwwroot = str_replace('http:', 'https:', $CFG->wwwroot);
+		redirect($wwwroot . '/local/checkup/index.php');
+	}
 }
 
 /**
@@ -38,26 +123,50 @@ function local_checkup_force_redirect($eventdata) {
  * @param stdClass $eventdata
  * @return boolean
  */
-function local_checkup_redirect($eventdata) {
-	global $SESSION, $CFG;
-	if (isguestuser()) {
+function local_checkup_force_redirect($eventdata) {
+	global $CFG, $DB;
+
+	// No authenticated user.
+	if (empty($eventdata->userid)) {
 		return true;
 	}
-	$user = get_complete_user_data("id", $eventdata->userid);
-	if ($user && $user->auth === "email") {
-		$redirect = get_user_preferences("force_checkup", false, $user);
-		$redirect = clean_param($redirect, PARAM_BOOL);
-		if ($redirect) {
-			if (isset($SESSION->wantsurl)) {
-				set_user_preference("checkup_wantsurl", $SESSION->wantsurl, $user);
-			} else {
-				// Delete setting from previous login.
-				set_user_preference("checkup_wantsurl", null, $user);
-			}
-			$SESSION->wantsurl = $CFG->wwwroot . "/local/checkup/index.php";
-		}
+	if (local_checkup_mustcheck()) {
+		local_checkup_wantsurl_update();
+		$wwwroot = str_replace('http:', 'https:', $CFG->wwwroot);
+		redirect($wwwroot . "/local/checkup/index.php");
 	}
-	return $user !== false;
+
+	return true;
+}
+
+/**
+ * Redirects to profile information verification via $SESSION->wantsurl
+ *
+ * @param stdClass $eventdata
+ * @return boolean
+ */
+function local_checkup_session_redirect($eventdata) {
+	global $SESSION, $CFG;
+
+	if (local_checkup_mustcheck()) {
+		local_checkup_wantsurl_update();
+	}
+
+	return true;
+}
+
+/**
+ * Updates and saves wantsurl, if isset
+ */
+function local_checkup_wantsurl_update() {
+	global $SESSION, $CFG;
+	if (isset($SESSION->wantsurl)) {
+		set_user_preference("checkup_wantsurl", $SESSION->wantsurl);
+	} else {
+		// Delete setting from previous login.
+		set_user_preference("checkup_wantsurl", null);
+	}
+	$SESSION->wantsurl = $CFG->wwwroot . "/local/checkup/index.php";
 }
 
 /**
@@ -67,15 +176,10 @@ function local_checkup_redirect($eventdata) {
  * @return boolean
  */
 function local_checkup_set_updated($eventdata) {
+	global $SESSION;
 	$user = get_complete_user_data("id", $eventdata->relateduserid);
-	$wantsurl = get_user_preferences("checkup_wantsurl", null, $user);
-	if (!empty($wantsurl) && empty($SESSION->wantsurl)) {
-		// Set new url only, if there is no other page the user wants to visit.
-		$SESSION->wantsurl = $wantsurl;
-	}
-	$userprefs = array("force_checkup" => null,
-	                   "checkup_wantsurl" => null);
-	return set_user_preferences($userprefs, $user);
+
+	return local_checkup_deactivate_for($user);
 }
 
 /**
@@ -84,7 +188,11 @@ function local_checkup_set_updated($eventdata) {
  * @param stdClass $user
  * @return boolean
  */
-function local_checkup_mustcheck(stdClass $user) {
-	//TODO
-	return true;
+function local_checkup_mustcheck() {
+	global $USER;
+
+	return isloggedin()
+	       && $USER->auth === "email"
+	       && !isguestuser()
+	       && get_user_preferences("checkup_forcecheck", false);
 }

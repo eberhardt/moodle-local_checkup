@@ -27,8 +27,7 @@ require_once($CFG->dirroot . "/local/checkup/checkup_form.php");
 require_once($CFG->dirroot . "/user/editlib.php");
 require_once($CFG->dirroot . "/user/profile/lib.php");
 require_once($CFG->dirroot . "/user/edit_form.php");
-
-require_login($SITE, false);
+require_once(__DIR__ . "/lib.php");
 
 $context = context_system::instance();
 $PAGE->set_url(new moodle_url("/local/checkup/index.php"));
@@ -36,34 +35,10 @@ $PAGE->set_context($context);
 $PAGE->set_title(get_string("checkdata", "local_checkup"));
 $PAGE->navbar->add(get_string("checkdata", "local_checkup"));
 
-$force = clean_param(get_user_preferences("force_checkup", false), PARAM_BOOL);
-if ($USER->auth !== "email" || !$force) {
+if (!local_checkup_mustcheck()) {
 	redirect($CFG->wwwroot . "/my", get_string("nocheckup", "local_checkup"), 10);
 }
 
-/*
-$form = new user_edit_form();
-$form->set_data($USER);
-
-if ($form->is_submitted() && $form->is_validated()) {
-	if ($data = $form->get_data()) {
-		echo "<pre>"; var_dump($data); die;
-		$user = get_complete_user_data("id", $USER->id);
-		foreach ($data as $key => $value) {
-			$user->$key = $value;
-		}
-		foreach ($user as $key => $value) {
-			$user->$key = clean_text($value, FORMAT_PLAIN);
-		}
-		$DB->update_record("user", $user);
-	}
-	set_user_preference("force_checkup", null);
-	$url = empty($SESSION->wantsurl2) ? $CFG->wwwroot . "/my" : $SESSION->wantsurl2;
-	$SESSION->wantsurl = null;
-	$SESSION->wantsurl2 = null;
-	redirect($url);
-}
-*/
 echo $OUTPUT->header();
 
 echo $OUTPUT->heading(get_string("checkdata", "local_checkup"))

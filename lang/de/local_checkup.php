@@ -31,5 +31,5 @@ $string["failedupdate"] = 'Das Script konnte {$a} Profile nicht aktualisieren. D
 $string["start"] = 'Nutzerdaten überprüfen lassen';
 $string["startinfo"] = 'Durch Selbsteinschreibung erzeugte Nutzerdaten sind nicht immer auf dem aktuellsten Stand. Sollten Sie Zweifel an der Aktualit&auml;t der Daten haben, k&ouml;nnen Sie hiermit die Nutzer/innen dazu zu zwingen ihre Daten zu &uuml;berpr&uuml;fen. Bei jedem Login der Nutzer/innen wird dann eine Aufforderung zur &Uuml;berpr&uuml;fung der Daten angezeigt, bis das Formular erfolgreich abgeschickt wurde.';
 $string["checkdata"] = '&Uuml;berprüfung der Profildaten';
-$string["checkinfo"] = 'Dieses System h&auml;ngt von der Aktualit&auml;t Ihrer Profildaten ab. Bitte <a href="{$a}">pr&uuml;fen Sie daher ihr Profil</a>, ob die Angaben noch immer korrekt sind.';
+$string["checkinfo"] = '<p>Dieses System h&auml;ngt von der Aktualit&auml;t Ihrer Profildaten ab. Bitte <a href="{$a}">pr&uuml;fen Sie daher ihr Profil</a>, ob die Angaben noch immer korrekt sind.</p><p>Best&auml;tigen Sie die Korrektheit, indem Sie am Ende der verlinkten Seite auf <b>&laquo;Profil aktualisieren&raquo;</b> dr&uuml;cken.</p>';
 $string["nocheckup"] = 'Diese Seite kann nicht direkt aufgerufen werden. Sie werden automatisch hierher weiter geleitet, sollten Sie Ihre Daten best&auml;tigen m&uuml;ssen.';

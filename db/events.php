@@ -28,8 +28,8 @@ $observers = array(
 
 		array('eventname' => '\core\event\user_loggedin',
 		      'includefile' => '/local/checkup/lib.php',
-		      'callback' => 'local_checkup_redirect',
-		      'priority' => 0),
+		      'callback' => 'local_checkup_session_redirect',
+		      'priority' => 9999),
 
 		array('eventname' => '\core\event\user_updated',
 		      'includefile' => '/local/checkup/lib.php',
