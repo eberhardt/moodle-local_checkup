@@ -1,0 +1,19 @@
+diff --git lib/moodlelib.php lib/moodlelib.php
+index 33f7d08..8f37369 100644
+--- lib/moodlelib.php
++++ lib/moodlelib.php
+@@ -2952,6 +2952,14 @@ function require_login($courseorid = null, $autologinguest = true, $cm = null, $
+         redirect($CFG->wwwroot .'/user/edit.php?id='. $USER->id .'&amp;course='. SITEID);
+     }
+ 
++    //BZHL Check whether the user should be checking profile data $JE 2015/03/05
++    if (!$preventredirect //BZHL $JE 2015/03/05
++        and file_exists($CFG->dirroot . "/local/checkup/lib.php") //BZHL $JE 2015/03/05
++        and file_exists($CFG->dirroot . "/local/checkup/index.php")) { //BZHL $JE 2015/03/05
++        require_once($CFG->dirroot . "/local/checkup/lib.php"); //BZHL $JE 2015/03/05
++        local_checkup_manual_redirect($setwantsurltome); //BZHL $JE 2015/03/05
++    } //BZHL $JE 2015/03/05
++
+     // Make sure the USER has a sesskey set up. Used for CSRF protection.
+     sesskey();
+ 
